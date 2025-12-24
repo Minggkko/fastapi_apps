@@ -9,23 +9,48 @@
             <!-- <textarea name="task" rows="5" placeholder="Enter your task" id="task" required></textarea> -->
             <textarea name="task" rows="5" placeholder="Enter your task" id="task"></textarea>
             <button type="submit" id="add_task">
-            Add
+             Add
             </button>
         </form>
     
-        <br>
-        <h2>Tasks</h2>
+         <br>
+    <h2>Tasks</h2>
 
-        <div>
-            {% for todo in todos %}
-            <div class="task">
-                <strike>{{ todo.task }}</strike>
-                    <small>
-                        <a href="">Edit</a>
-                        <a href="">Delete</a>
-                    </small>
-            </div>
-            {% endfor %}
+    <div>
+      {% if todos == 0 %}
+        <br>
+        <p> 입력한 TODO 메모가 없습니다. </p>
+      {% else %}
+        {% for todo in todos %}
+        <div class="task">
+            <form action="/toggle/{{ todo.id }}" method="post"
+
+                style="display:inline;">
+
+            <input type="checkbox"
+                name="completed"
+                onchange="this.form.submit()"
+                {% if todo.completed %}checked{% endif %}>
+            </form>
+            
+            {% if todo.completed %}
+                ✅ <strike>{{ todo.task }}</strike>
+            {% else %}
+                ⏳{{ todo.task }}
+            {% endif %}
+            <small>
+                <a href="/edit/{{ todo.id }}">✏️Edit</a>
+                
+                <form action="/delete/{{ todo.id }}"
+                    method="post"
+                    style="display:inline;">
+                 
+                 <button type="submit">🗑️Delete</button>
+                </form>
+            </small>
         </div>
+        {% endfor %}
+      {% endif %}
+    </div>
     </main>
 {% endblock content%}

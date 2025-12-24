@@ -41,23 +41,56 @@ def get_db():
 def home(request: Request,
                db : Session = Depends(get_db)):
     # todo 데이터 조회
-    todos = db.query(models.Todo).all()
-    print(todos)
-    for t in todos:
-        print(t.id, t.task,t.completed)
+    todos = db.query(models.Todo).order_by(models.Todo.id.desc())
+    #print(todos)
+    # for t in todos:
+    #     print(t.id, t.task,t.completed)
     return templates.TemplateResponse("index.html",
                                       {"request": request,
                                        "todos": todos})
 
+# todo 추가 처리
 @app.post("/add")
-def add(request : Request,
-        task : str = Form(...),
-        db : Session = Depends(get_db)):
-# 새로운 todo 객체 생성
-    todo=models.Todo(task=task, completed=False)
-    print(todo)
-        # todo를 DB 추가
+async def add(request: Request, task: str = Form(...), db: Session = Depends(get_db)):
+	  # todo 객체 만들기
+    todo = models.Todo(task=task)
+    # todo 추가하기
     db.add(todo)
+    # db 적용하기
     db.commit()
     return RedirectResponse(url=app.url_path_for("home"), 
                             status_code=status.HTTP_303_SEE_OTHER)
+
+# 수정을 위한 조회
+@app.get("/edit/{todo_id}")
+async def edit(request: Request, todo_id: int, db: Session = Depends(get_db)):
+    todo = db.query(models.Todo).filter(models.Todo.id == todo_id).first()
+    todos = db.query(models.Todo).all()
+    return templates.TemplateResponse("edit.html", {"request": request, "todo": todo, "todos": todos})
+
+# 수정한 것 적용
+@app.post("/edit/{todo_id}")
+async def update(request: Request, todo_id: int, task: str = Form(...), 
+                 completed: bool = Form(False), db: Session = Depends(get_db)):
+    todo = db.query(models.Todo).filter(models.Todo.id == todo_id).first()
+    todo.task = task
+    todo.completed = completed
+    db.commit()
+    return RedirectResponse(url=app.url_path_for("home"), 
+                            status_code=status.HTTP_303_SEE_OTHER)
+
+# 수정을 위한 조회
+@app.get("/delete/{todo_id}")
+async def delete(request: Request, todo_id: int, db: Session = Depends(get_db)):
+    todo = db.query(models.Todo).filter(models.Todo.id == todo_id).first()
+    db.delete(todo)
+    db.commit()
+    return RedirectResponse(url=app.url_path_for("home"), 
+                            status_code=status.HTTP_303_SEE_OTHER)
+
+@app.post("/toggle/{id}")
+def toggle(id: int, db: Session = Depends(get_db)):
+    todo = db.query(models.Todo).get(id)
+    todo.completed = not todo.completed
+    db.commit()
+    return RedirectResponse("/", status_code=303)
